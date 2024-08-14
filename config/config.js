@@ -1,4 +1,7 @@
+const fs = require('fs');
 require("dotenv").config(); // Load .env file
+//import fs
+
 
 module.exports = {
     "development": {

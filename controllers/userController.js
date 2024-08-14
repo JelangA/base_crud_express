@@ -5,56 +5,36 @@ controller = {};
 
 controller.create = async (req, res) => {
     try {
-        //!req.body.name?.trim() || !req.body.job?.trim()
-        if (req.body.name.trim() === "" || req.body.job.trim() === "") {
-            return respon.responseErr(res, "error create user missing record");
+        // Memeriksa apakah req.body.name dan req.body.job ada dan bukan string kosong
+        if (!req.body.name || !req.body.job || req.body.name.trim() === "" || req.body.job.trim() === "") {
+            return respon.responseErr(res, "Error: Name and Job fields are required and cannot be empty");
         }
-        const createUser = await User.create(req.body, {
-            // attributes: { exclude: ["updatedAt"] },
-        });
-        return respon.response(res, createUser, 201)
+
+        const createUser = await User.create(req.body);
+
+        return respon.response(res, createUser, 201);
     } catch (error) {
         console.log(error);
-        return respon.responseErr(res, error.message, 500)
+        return respon.responseErr(res, error.message, 500);
     }
-}
+};
+
 
 controller.update = async (req, res) => {
-    let message = "Success";
     try {
+        // Check if request body is valid
+        if (!req.body || Object.keys(req.body).length === 0) {
+            return respon.responseErr(res, "Error: No fields to update", 400);
+        }
         let updateUser = await User.update(req.body, {
             where: {
                 id: req.params.id,
             },
         });
-        if (updateUser[0] === 0) {
-            return respon.responseErr(res, "Update User Data Failed");
+        if (updated === 0) {
+            return respon.responseErr(res, "User not found or no changes made", 404);
         }
         let userBaru = await User.findOne({
-            where: {
-                id: req.params.id,
-            },
-        });
-        return respon.response(res, userBaru);
-    } catch (err) {
-        console.log(err);
-        return respon.responseErr(res, err.message);
-    }
-};
-
-
-controller.patch = async (req, res) => {
-    let message = "Success";
-    try {
-        let updateUser = await User.patch(req.body, {
-            where: {
-                id: req.params.id,
-            },
-        });
-        if (updateUser[0] === 0) {
-            return respon.responseErr(res, "Gagal edit data User");
-        }
-        const userBaru = await User.findOne({
             where: {
                 id: req.params.id,
             },
@@ -66,8 +46,40 @@ controller.patch = async (req, res) => {
     }
 };
 
+
+controller.patch = async (req, res) => {
+    try {
+        // Check if request body is valid
+        if (!req.body || Object.keys(req.body).length === 0) {
+            return respon.responseErr(res, "Error: No fields to update", 400);
+        }
+        // Update the user with the provided data
+        const [updated] = await User.update(req.body, {
+            where: {
+                id: req.params.id,
+            },
+        });
+
+        // Check if the update was successful
+        if (updated === 0) {
+            return respon.responseErr(res, "User not found or no changes made", 404);
+        }
+
+        // Retrieve the updated user data
+        const userBaru = await User.findOne({
+            where: {
+                id: req.params.id,
+            },
+        });
+
+        return respon.response(res, userBaru);
+    } catch (err) {
+        console.log(err);
+        return respon.responseErr(res, err.message, 500);
+    }
+};
+
 controller.delete = async (req, res) => {
-    let message = "Succes";
     try {
         let getOne = await User.findOne({
             where: {
@@ -75,17 +87,17 @@ controller.delete = async (req, res) => {
             },
         });
         if (getOne == null) {
-            return respon.responseErr(res, "User Id Not Found")
+            return respon.responseErr(res, "User Id Not Found", 404)
         }
         await User.destroy({
             where: {
                 id: req.params.id,
             },
         });
-        return respon.response(res, message)
+        return respon.response(res, "User Deleted");
 
     } catch (error) {
-        return respon.responseErr(res, error.message);
+        return respon.responseErr(res, error.message, 500);
     }
 }
 
@@ -93,13 +105,11 @@ controller.getAll = async (req, res) => {
     try {
         const delay = parseInt(req.query.delay) || 0;
         await new Promise((resolve) => setTimeout(resolve, delay));
+
         const listUsers = await User.findAll();
-        return respon.response( res, listUsers);
+        return respon.response(res, listUsers);
     } catch (error) {
-        return respon.responseErr(
-            res,
-            error.message
-        );
+        return respon.responseErr(res, error.message, 500);
     }
 };
 
@@ -113,12 +123,12 @@ controller.getById = async (req, res) => {
         });
         console.log(data);
         if (data == null) {
-            return respon.responseErr(res,  "User Id Not Found") ;
+            return respon.responseErr(res, "User Id Not Found", 404);
         }
         return respon.response(res, data);
 
     } catch (error) {
-        return respon.responseErr(res, error.message);
+        return respon.responseErr(res, error.message, 500);
     }
 }
 module.exports = controller;
